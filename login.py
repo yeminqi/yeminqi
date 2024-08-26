@@ -1,9 +1,10 @@
-from PySide6.QtWidgets import QApplication, QStackedWidget, QMessageBox,QLineEdit,QDialog,QHBoxLayout,QVBoxLayout,QPushButton,QListWidget
+from PySide6.QtWidgets import QApplication, QStackedWidget, QMessageBox,QLineEdit,QDialog,QHBoxLayout,QVBoxLayout,QPushButton,QListWidget,QTextBrowser
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtGui import QRegularExpressionValidator
+from PySide6.QtGui import QRegularExpressionValidator,QFont
 from PySide6.QtCore import QRegularExpression
 import sys,os,shutil
 import main_page
+
 # 在 QApplication 之前先实例化
 uiLoader = QUiLoader()
 
@@ -34,9 +35,6 @@ class Stats:
         self.regex = QRegularExpression("^1[3-9]\d{9}$")
         validator = QRegularExpressionValidator(self.regex, self.register_page.phoneNum_Edit)
         self.register_page.phoneNum_Edit.setValidator(validator)
-
-        # 连接 FinishBtn 的点击信号 （点击完成注册后提示手机号是否有误）
-        self.register_page.FinishBtn.clicked.connect(self.check_phone_number_format)
 
         # 创建一个栈式布局容器
         self.stack_widget = QStackedWidget()
@@ -127,14 +125,29 @@ class Stats:
        
     # 联系作者
     def connectAuthor(self):
-        QMessageBox.warning(self.register_page, "提示", f"QQ：916994565\nVX：SHEN_2199")
+        dialog = QDialog()
+        dialog.setWindowTitle("联系方式")
+        layout = QVBoxLayout()
+        text_browser = QTextBrowser()
+        font = QFont()
+        font.setPointSize(14)
+        text_browser.setFont(font)
+        text_browser.setHtml(f"QQ：916994565<br>VX：SHEN_2199")
+
+        text_browser.setFixedWidth(200)  # 设置宽度
+        text_browser.setFixedHeight(60)  # 设置高度
+
+        layout.addWidget(text_browser)
+        dialog.setLayout(layout)
+        dialog.exec()
 
     # 忘记密码
     def forggetpwd(self):
         user_name=self.login_page.Lusername.text()
         try:
             with open(f"student_Info/{user_name}/{user_name}.txt",'r',encoding='utf-8') as f:
-                QMessageBox.warning(self.register_page, "提示", f"{user_name}的{f.readline()}")
+                pwd = f.readlines()[1].split(',')[1]
+                QMessageBox.warning(self.register_page, "提示", f"{user_name}的密码:{pwd}")
         except:
             all_Info = os.listdir('student_Info')
             if user_name not in all_Info and user_name:
@@ -172,12 +185,6 @@ class Stats:
         self.stack_widget.setWindowTitle(self.register_page.windowTitle())
 
     ### 注册页相关方法
-    def check_phone_number_format(self):
-        text = self.register_page.phoneNum_Edit.text()
-        match = self.regex.match(text)
-        if not match.hasMatch():
-            QMessageBox.warning(self.register_page, "错误提示", "请输入正确手机号码！")
-
     def FinishBtn(self):
         name_text = self.register_page.name_Edit.text()
         user_pwd = self.register_page.newPwd_Edit.text()
@@ -185,26 +192,30 @@ class Stats:
         stu_grade = self.register_page.grade_Edit.text()
         school_name = self.register_page.school_Edit.text()
         phone_num = self.register_page.phoneNum_Edit.text()
+        match = self.regex.match(phone_num)
         all_Info = os.listdir("student_Info")
         if user_pwd:
             if name_text not in all_Info:
                 if user_pwd==re_pwd:
-                    os.mkdir(f"student_Info/{name_text}")
-                    with open(f"student_Info/{name_text}/{name_text}.txt","w+",encoding='utf-8') as f:
-                        f.write(f"姓名,{name_text}\n")
-                        f.write(f"密码,{user_pwd}\n")
-                        if stu_grade:
-                            f.write(f"年级,{stu_grade}\n")
-                        else:
-                            f.write(f"年级,未知\n")
-                        if school_name:
-                            f.write(f"学校,{school_name}\n")
-                        else:
-                            f.write(f"学校,未知\n")
-                        f.write(f"电话,{phone_num}\n")
-                        QMessageBox.warning(self.register_page, "提示", "注册完成！")
-                        self.clear_page()
-                        self.returnMainPage()
+                    if  match.hasMatch():
+                        os.mkdir(f"student_Info/{name_text}")
+                        with open(f"student_Info/{name_text}/{name_text}.txt","w+",encoding='utf-8') as f:
+                                f.write(f"姓名,{name_text}\n")
+                                f.write(f"密码,{user_pwd}\n")
+                                if stu_grade:
+                                    f.write(f"年级,{stu_grade}\n")
+                                else:
+                                    f.write(f"年级,未知\n")
+                                if school_name:
+                                    f.write(f"学校,{school_name}\n")
+                                else:
+                                    f.write(f"学校,未知\n")
+                                f.write(f"电话,{phone_num}\n")
+                                QMessageBox.warning(self.register_page, "提示", "注册完成！")
+                                self.clear_page()
+                                self.returnMainPage()
+                    else:
+                        QMessageBox.warning(self.register_page, "错误提示", "请输入正确手机号码！")
                 else:
                     QMessageBox.warning(self.register_page, "警告", "请确认密码！")
             else:
