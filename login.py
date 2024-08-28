@@ -1,53 +1,64 @@
-from PySide6.QtWidgets import QApplication, QStackedWidget, QMessageBox,QLineEdit,QDialog,QHBoxLayout,QVBoxLayout,QPushButton,QListWidget,QTextBrowser
+from PySide6.QtWidgets import QApplication, QStackedWidget, QMessageBox,QLineEdit,QDialog,QHBoxLayout,\
+QVBoxLayout,QPushButton,QListWidget,QTextBrowser
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtGui import QRegularExpressionValidator,QFont
 from PySide6.QtCore import QRegularExpression
 import sys,os,shutil
-import main_page
+import main_page,word_page
 
 # 在 QApplication 之前先实例化
 uiLoader = QUiLoader()
 
 class Stats:
     def __init__(self):
+        # 的Main_Stats
+        self.Main_stats = main_page.Main_Stats()
+        # word_page
+        self.word_page_ui=word_page.WORD_PAGE()
+
         self.deleted_user_path = None
-        # 加载登录界面
+
+        # 登录界面
         self.login_page = uiLoader.load('ui/login.ui')
-        # 注册按钮
         self.login_page.register_2.clicked.connect(self.register_2)
-        # 登录按钮
         self.login_page.login_btn.clicked.connect(self.login_btn)
         self.login_page.Lpassword.returnPressed.connect(self.login_btn)
-        # 忘记密码
         self.login_page.forggetpwd.clicked.connect(self.forggetpwd)
-        # 所有用户
         self.login_page.all_user.clicked.connect(self.all_user)
-        # 联系作者
         self.login_page.connectAuthor.clicked.connect(self.connectAuthor)
 
-        # 加载注册界面
+        # 注册界面
         self.register_page = uiLoader.load('ui/register.ui')
         self.register_page.returnMainPage.clicked.connect(self.returnMainPage)
         self.register_page.phoneNum_Edit.returnPressed.connect(self.FinishBtn)
         self.register_page.FinishBtn.clicked.connect(self.FinishBtn)
+        # 返回主页
+        self.Main_stats.ui.quit_btn.clicked.connect(self.returnMainPage)
+        self.Main_stats.ui.back_btn.clicked.connect(self.returnMainPage2)
+
+        # word_page
+        self.word_page_ui.word_page.return_btn.clicked.connect(self.word_page_return_btn)
+        self.Main_stats.ui.word_btn.clicked.connect(self.word_page_word_btn)
 
         # 输入格式限制
         self.regex = QRegularExpression("^1[3-9]\d{9}$")
         validator = QRegularExpressionValidator(self.regex, self.register_page.phoneNum_Edit)
         self.register_page.phoneNum_Edit.setValidator(validator)
 
-        # 创建一个栈式布局容器
+        # 栈式布局容器
         self.stack_widget = QStackedWidget()
         self.stack_widget.resize(435, 640)
         self.stack_widget.addWidget(self.login_page)
         self.stack_widget.setWindowTitle(self.login_page.windowTitle())
-        
-        # 实例化main_page中的Main_Stats类
-        self.Main_stats = main_page.Main_Stats()
-        # 返回主页
-        self.Main_stats.ui.quit_btn.clicked.connect(self.returnMainPage)
-        self.Main_stats.ui.back_btn.clicked.connect(self.returnMainPage2)
-
+    ### word_page
+    def word_page_word_btn(self):
+        self.stack_widget.addWidget(self.word_page_ui.word_page)
+        self.stack_widget.setWindowTitle(self.word_page_ui.word_page.windowTitle())
+        self.stack_widget.setCurrentWidget(self.word_page_ui.word_page)
+    def word_page_return_btn(self):
+        self.stack_widget.setWindowTitle(self.Main_stats.ui.windowTitle())
+        self.stack_widget.setCurrentWidget(self.Main_stats.ui)
+   
     ### 登录页相关方法
     def all_user(self):
         stu_list = os.listdir("student_Info")
@@ -79,7 +90,7 @@ class Stats:
             self.deleted_user_path = item.text()
         list_widget.itemClicked.connect(handle_item_click)
         def delete_user():
-            reply = QMessageBox.question(self.register_page, "确认删除", f"确定要删除学员 {self.deleted_user_path} ？", QMessageBox.Yes | QMessageBox.No)
+            reply = QMessageBox.question(self.register_page, "确认删除", f"确定要删除学员 {self.deleted_user_path} ?", QMessageBox.Yes | QMessageBox.No)
             if reply == QMessageBox.Yes:
                 try:
                     shutil.rmtree(f"student_Info/{self.deleted_user_path}")
@@ -121,8 +132,7 @@ class Stats:
         dialog.setWindowTitle("所有学员")
         dialog.setFixedSize(435, 640)
         dialog.exec()
-
-       
+ 
     # 联系作者
     def connectAuthor(self):
         dialog = QDialog()
@@ -155,7 +165,6 @@ class Stats:
             else:
                 QMessageBox.warning(self.register_page, "警告", "请输入用户名！")
             
-
     def login_btn(self):
         user_name=self.login_page.Lusername.text()
         pwd = self.login_page.Lpassword.text()
@@ -211,7 +220,6 @@ class Stats:
                                 else:
                                     f.write(f"学校,未知\n")
                                 f.write(f"电话,{phone_num}\n")
-                                QMessageBox.warning(self.register_page, "提示", "注册完成！")
                                 self.clear_page()
                                 self.returnMainPage()
                     else:
@@ -228,6 +236,7 @@ class Stats:
         self.stack_widget.setCurrentWidget(self.login_page)
         self.login_page.setEnabled(True)
         self.stack_widget.setWindowTitle(self.login_page.windowTitle())
+    
     def returnMainPage2(self):
         self.stack_widget.setCurrentWidget(self.login_page)
         self.login_page.setEnabled(True)
@@ -242,6 +251,7 @@ class Stats:
         widgets2 = self.login_page.findChildren(QLineEdit)
         for widget in widgets2:
             widget.clear()
+
 
 app = QApplication(sys.argv)
 stats = Stats()
